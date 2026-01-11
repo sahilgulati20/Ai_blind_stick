@@ -4,6 +4,7 @@
 * {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
 html, body, #root {
@@ -30,6 +31,7 @@ body {
   font-family: monospace;
   background-color: #ffffff;
   color: #213547;
+  overflow: hidden;
 }
 
 a {
@@ -43,7 +45,7 @@ a:hover {
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: clamp(1.5rem, 5vw, 3.2rem);
   line-height: 1.1;
 }
 
@@ -57,10 +59,15 @@ button {
   background-color: #f9f9f9;
   cursor: pointer;
   transition: border-color 0.25s;
+  touch-action: manipulation;
 }
 
 button:hover {
   border-color: #646cff;
+}
+
+button:active {
+  border-color: #535bf2;
 }
 
 button:focus,
@@ -69,7 +76,7 @@ button:focus-visible {
 }
 
 .bg-grid {
-  background-size: 40px 40px;
+  background-size: clamp(20px, 5vw, 40px) clamp(20px, 5vw, 40px);
   background-image:
     linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px);
@@ -81,5 +88,24 @@ button:focus-visible {
   }
   to {
     transform: translateX(0%);
+  }
+}
+
+/* Responsive design breakpoints */
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  body {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1025px) {
+  body {
+    font-size: 18px;
   }
 }

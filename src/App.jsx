@@ -12,12 +12,12 @@ export default function App() {
   if (!ready) return <LoadingScreen />;
 
   return (
-    <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
+    <div className="w-screen h-screen relative overflow-hidden">
       <div className="absolute inset-0 bg-grid"></div>
 
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="relative z-10 flex flex-col h-full w-full">
         <Navbar />
-        <main className="flex-1 flex items-center justify-center text-blue-600 font-mono tracking-widest">
+        <main className="flex-1 flex items-center justify-center text-blue-600 font-mono tracking-widest text-xs sm:text-sm md:text-base lg:text-lg px-4 overflow-auto">
           CORE SYSTEM READY
         </main>
       </div>
