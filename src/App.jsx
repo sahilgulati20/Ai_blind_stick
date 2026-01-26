@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Wifi, Battery, ShieldAlert, Crosshair, 
-  Eye, Navigation, Activity 
+  Eye, Navigation, Activity, Maximize 
 } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue } from 'firebase/database';
@@ -178,6 +178,8 @@ const Radar = () => {
 const CameraFeed = () => {
   const [streamURL, setStreamURL] = useState("");
   const [loading, setLoading] = useState(true);
+  const containerRef = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const streamRef = ref(db, "live_camera/link");
@@ -192,8 +194,25 @@ const CameraFeed = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
-    <div className="relative w-full h-full bg-slate-100 overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-full bg-slate-100 overflow-hidden">
       {streamURL ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <iframe
@@ -225,6 +244,15 @@ const CameraFeed = () => {
         </div>
       )}
       
+      {/* Fullscreen Button */}
+      <button
+        onClick={toggleFullscreen}
+        className="absolute top-4 left-4 z-20 bg-white/90 hover:bg-white border border-blue-200 text-blue-600 p-2 rounded shadow-sm backdrop-blur-sm transition-all hover:scale-105 active:scale-95 pointer-events-auto"
+        title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+      >
+        <Maximize className="w-4 h-4" />
+      </button>
+
       {/* HUD Overlays */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute bottom-4 left-4 right-4 flex justify-between text-[10px] text-blue-900 font-cyber uppercase tracking-widest bg-white/80 px-3 py-1 rounded border border-blue-100 backdrop-blur-sm shadow-sm">
@@ -241,6 +269,7 @@ const BlueprintMap = () => {
   const mapRef = useRef(null);
   const markerRef = useRef(null);
   const [gpsData, setGpsData] = useState({ latitude: 29.000784, longitude: 77.697562333 });
+  const [mapInitialized, setMapInitialized] = useState(false);
 
   useEffect(() => {
     // Listen to GPS data from Firebase
@@ -248,6 +277,7 @@ const BlueprintMap = () => {
     const unsubscribe = onValue(gpsRef, (snap) => {
       const data = snap.val();
       if (data && data.latitude && data.longitude && data.valid) {
+        console.log('GPS Update:', data.latitude, data.longitude);
         setGpsData({ latitude: data.latitude, longitude: data.longitude });
       }
     });
@@ -275,21 +305,23 @@ const BlueprintMap = () => {
             });
 
             markerRef.current = window.L.marker([gpsData.latitude, gpsData.longitude], { icon }).addTo(mapRef.current);
+            setMapInitialized(true);
         } catch (e) {
             console.log("Map init deferred");
         }
       }
     }, 100);
     return () => clearInterval(checkL);
-  }, []);
+  }, [gpsData.latitude, gpsData.longitude]);
 
   // Update marker position when GPS data changes
   useEffect(() => {
-    if (mapRef.current && markerRef.current && gpsData.latitude && gpsData.longitude) {
+    if (mapInitialized && mapRef.current && markerRef.current && gpsData.latitude && gpsData.longitude) {
+      console.log('Updating marker position:', gpsData.latitude, gpsData.longitude);
       markerRef.current.setLatLng([gpsData.latitude, gpsData.longitude]);
       mapRef.current.setView([gpsData.latitude, gpsData.longitude], 16);
     }
-  }, [gpsData]);
+  }, [gpsData.latitude, gpsData.longitude, mapInitialized]);
 
   return <div id="cyber-map" className="w-full h-full map-blueprint opacity-90" />;
 };
@@ -370,7 +402,7 @@ export default function App() {
             </div>
           </div>
           {/* System Info */}
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 text-[8px] sm:text-[9px] md:text-xs font-mono text-slate-700 flex-shrink-0 overflow-x-auto">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 text-[8px] sm:text-[9px] md:text-xs font-mono text-slate-700 flex-shrink-0">
             <StatBadge icon={<Wifi size={12} className="sm:w-4 sm:h-4" />} label="NET" value="ONLINE" />
             <StatBadge icon={<Navigation size={12} className="sm:w-4 sm:h-4" />} label="SPD" value={`${gpsData.speed_kmph.toFixed(1)}km`} />
             <StatBadge icon={<Activity size={12} className="sm:w-4 sm:h-4" />} label="SAT" value={gpsData.satellites} />

@@ -18,31 +18,48 @@ const db = getDatabase(app);
 
 function LiveVideo() {
   const [streamURL, setStreamURL] = useState("");
+  const [imageKey, setImageKey] = useState(Date.now());
 
   useEffect(() => {
     const streamRef = ref(db, "live_camera/link");
-    onValue(streamRef, snap => {
-      if (snap.val()) setStreamURL(snap.val());
+    const unsubscribe = onValue(streamRef, snap => {
+      if (snap.val()) {
+        setStreamURL(snap.val());
+        setImageKey(Date.now()); // Force image refresh when URL updates
+      }
     });
+    return () => unsubscribe();
   }, []);
+
+  // Auto-refresh image every 2 seconds
+  useEffect(() => {
+    if (streamURL) {
+      const interval = setInterval(() => {
+        setImageKey(Date.now());
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [streamURL]);
 
   return (
     <div className="relative w-full h-full bg-slate-100 overflow-hidden">
 
       {streamURL ? (
-        <iframe
-          src={streamURL}
-          allow="autoplay"
-          className="absolute inset-0 w-full h-full border-0"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            display: 'block',
-            margin: 0,
-            padding: 0
-          }}
-        />
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
+          <img
+            key={imageKey}
+            src={`${streamURL}?t=${imageKey}`}
+            alt="Live Camera Feed"
+            className="w-full h-full object-cover"
+            style={{
+              display: 'block'
+            }}
+            onError={(e) => {
+              console.error('Image load error');
+              e.target.style.display = 'none';
+            }}
+          />
+        </div>
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
           <Wifi className="w-8 h-8 opacity-50" />
@@ -55,7 +72,7 @@ function LiveVideo() {
                       text-[11px] font-mono text-blue-700 tracking-widest flex justify-between px-4 py-1">
         <span>SOURCE: {streamURL ? "LIVE" : "OFFLINE"}</span>
         <span>REC: LIVE</span>
-        <span>MODE: EXT_FEED</span>
+        <span>MODE: IMG_FEED</span>
       </div>
 
       {/* SOS */}
